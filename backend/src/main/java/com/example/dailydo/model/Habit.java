@@ -12,10 +12,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Habit {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Habit extends BaseEntity{
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -27,16 +24,7 @@ public class Habit {
     private String description;
 
     @Column(name = "frequency", nullable = false)
+    @Builder.Default
     private Frequency frequency  = Frequency.DAILY;
 
-    @Column(name = "created_at")
-    private LocalDate createdAt = LocalDate.now();
-
-    @Column(name = "updated_at")
-    private LocalDate updatedAt = LocalDate.now();
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDate.now();
-    }
 }

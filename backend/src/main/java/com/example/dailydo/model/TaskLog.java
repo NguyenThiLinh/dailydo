@@ -12,21 +12,19 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TaskLog {
+public class TaskLog extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", nullable = false)
     private Task task;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "action_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
     private ActionType actionType = ActionType.CREATE;
 
     @Column(columnDefinition = "TEXT")
@@ -41,4 +39,11 @@ public class TaskLog {
     @Column(name = "log_date", nullable = false)
     private LocalDate logDate;
 
+    @PrePersist
+    public void prePersist() {
+        super.prePersist();
+        if (logDate == null) {
+            logDate = LocalDate.now();
+        }
+    }
 }

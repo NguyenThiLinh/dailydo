@@ -45,10 +45,7 @@ public class AuthorController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        Map.of(
-                                "accessToken", accessToken,
-                                "refreshToken", refreshToken
-                        ),
+                        Map.of("accessToken", accessToken, "refreshToken", refreshToken),
                         "Login successfully"
                 )
         );
