@@ -1,5 +1,8 @@
 package com.example.dailydo.controller;
 
+import com.example.dailydo.exception.ResourceNotFoundException;
+import com.example.dailydo.model.User;
+import com.example.dailydo.repository.UserRepository;
 import com.example.dailydo.response.ApiResponse;
 import com.example.dailydo.security.JwtTokenProvider;
 import com.example.dailydo.dto.UserDTO;
@@ -11,8 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -23,6 +28,7 @@ public class AuthorController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<?>> register(@RequestBody UserDTO.Request request) {
@@ -43,9 +49,19 @@ public class AuthorController {
         String accessToken = jwtTokenProvider.generateAccessToken(authentication);
         String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
 
+        User user = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(()-> new UsernameNotFoundException("User not found"));
+
+        UserDTO userDto = userService.mapToDTO(user);
+
+        Map<String, Object> data = Map.of(
+                "user", userDto,
+                "accessToken", accessToken,
+                "refreshToken", refreshToken);
+
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        Map.of("accessToken", accessToken, "refreshToken", refreshToken),
+                        data,
                         "Login successfully"
                 )
         );

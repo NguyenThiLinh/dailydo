@@ -20,4 +20,6 @@ public interface UserService {
 
     boolean softDeleteUser(Long id);
 
+    UserDTO mapToDTO(User user);
+
 }

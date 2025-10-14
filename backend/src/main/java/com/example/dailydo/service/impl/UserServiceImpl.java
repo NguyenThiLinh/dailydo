@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    private UserDTO mapToDTO(User user) {
+    public UserDTO mapToDTO(User user) {
         return UserDTO.builder()
                 .id(user.getId())
                 .firstName(user.getFirstName())
