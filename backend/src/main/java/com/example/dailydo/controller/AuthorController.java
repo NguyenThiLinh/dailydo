@@ -1,92 +1,49 @@
 package com.example.dailydo.controller;
 
-import com.example.dailydo.exception.ResourceNotFoundException;
-import com.example.dailydo.model.User;
-import com.example.dailydo.repository.UserRepository;
-import com.example.dailydo.response.ApiResponse;
-import com.example.dailydo.security.JwtTokenProvider;
 import com.example.dailydo.dto.UserDTO;
-
-import com.example.dailydo.service.interfaces.UserService;
+import com.example.dailydo.request.LoginRequest;
+import com.example.dailydo.request.RegisterRequest;
+import com.example.dailydo.response.ApiResponse;
+import com.example.dailydo.service.interfaces.AuthService;
+import com.example.dailydo.util.MessageUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import javax.validation.Valid;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthorController {
-
-    private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserService userService;
-    private final UserRepository userRepository;
+    private final AuthService authService;
+    private final MessageUtil messageUtil;
+    private final MessageSource messageSource;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<?>> register(@RequestBody UserDTO.Request request) {
-        request.setRoleId(1L);
-        UserDTO createUser = userService.createUser(request);
-        return ResponseEntity.ok(ApiResponse.success(createUser, "User registered successfully"));
+    public ApiResponse<UserDTO> register(@Valid @RequestBody RegisterRequest request) {
+        UserDTO user = authService.register(request);
+        String msg = messageSource.getMessage("register.success", null, LocaleContextHolder.getLocale());
+        return ApiResponse.success(user, msg);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<?>> login(@RequestBody UserDTO.Login loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmail(),
-                        loginRequest.getPassword()
-                )
-        );
-
-        String accessToken = jwtTokenProvider.generateAccessToken(authentication);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
-
-        User user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(()-> new UsernameNotFoundException("User not found"));
-
-        UserDTO userDto = userService.mapToDTO(user);
-
-        Map<String, Object> data = Map.of(
-                "user", userDto,
-                "accessToken", accessToken,
-                "refreshToken", refreshToken);
-
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        data,
-                        "Login successfully"
-                )
-        );
+    public ApiResponse<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
+        Map<String, Object> data = authService.login(request);
+        return ApiResponse.success(data, messageUtil.get("login.success"));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<?>> refreshToken(@RequestBody Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
-        if (refreshToken == null || !jwtTokenProvider.validateToken(refreshToken)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Invalid refresh token", "TOKEN_INVALID"));
-        }
-
-        String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(username, null, null);
-        String newAccessToken = jwtTokenProvider.generateAccessToken(authentication);
-
-        return ResponseEntity.ok(ApiResponse.success(
-                Map.of("accessToken", newAccessToken),
-                "Token refreshed"
-        ));
+    public ApiResponse<Map<String, String>> refresh(@RequestBody Map<String,String> request) {
+        String newAccessToken = authService.refreshToken(request.get("refreshToken"));
+        return ApiResponse.success(Map.of("accessToken", newAccessToken), messageUtil.get("token.refreshed"));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<?>> logout(@RequestBody(required = false) Map<String, String> request) {
-        return ResponseEntity.ok(ApiResponse.success(null, "Logout successfully"));
+    public ApiResponse<Void> logout(@RequestParam String email) {
+        authService.logout(email);
+        return ApiResponse.success(null, messageUtil.get("logout.success"));
     }
 }

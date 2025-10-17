@@ -7,6 +7,8 @@ import com.example.dailydo.model.Role;
 import com.example.dailydo.model.User;
 import com.example.dailydo.repository.RoleRepository;
 import com.example.dailydo.repository.UserRepository;
+import com.example.dailydo.request.CreateUserRequest;
+import com.example.dailydo.request.UpdateUserRequest;
 import com.example.dailydo.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,61 +26,49 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserDTO mapToDTO(User user) {
-        return UserDTO.builder()
-                .id(user.getId())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .email(user.getEmail())
-                .roleId(user.getRole().getId())
-                .build();
-    }
-
-    private User mapToEntity(UserDTO.Request request) {
-        Role role = roleRepository.findById(request.getRoleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Role", request.getRoleId()));
-        return User.builder()
-                .firstName(request.getFirstName().trim())
-                .lastName(request.getLastName().trim())
-                .email(request.getEmail().trim())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(role)
-                .build();
-    }
-
     @Override
-    public UserDTO createUser(UserDTO.Request request) {
+    public UserDTO createUser(CreateUserRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new EmailAlreadyExistsException(request.getEmail());
         }
-        User user = mapToEntity(request);
-        return mapToDTO(userRepository.save(user));
-    }
 
-    @Override
-    public List<UserDTO> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
-    }
+        Role role = roleRepository.findById(request.getRoleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Role", request.getRoleId()));
 
-    @Override
-    public List<UserDTO> getAllActiveUsers() {
-        List<User> users = userRepository.findByDeletedAtIsNull();
-        return users.stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+        User user = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(role)
+                .build();
+
+        return UserDTO.fromEntity(userRepository.save(user));
     }
 
     @Override
     public UserDTO getUserById(Long id) {
         return userRepository.findById(id)
-                .map(this::mapToDTO)
+                .map(UserDTO::fromEntity)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 
     @Override
-    public UserDTO updateUser(Long id, UserDTO.Request request) {
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(UserDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+    @Override public List<UserDTO> getAllActiveUsers() {
+        List<User> users = userRepository.findByDeletedAtIsNull();
+        return users.stream()
+                .map(UserDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public UserDTO updateUser(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
 
@@ -87,11 +76,11 @@ public class UserServiceImpl implements UserService {
             userRepository.findByEmail(request.getEmail()).ifPresent(u -> {
                 throw new EmailAlreadyExistsException(request.getEmail());
             });
-            user.setEmail(request.getEmail().trim());
+            user.setEmail(request.getEmail());
         }
 
-        if (request.getFirstName() != null) user.setFirstName(request.getFirstName().trim());
-        if (request.getLastName() != null) user.setLastName(request.getLastName().trim());
+        if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) user.setLastName(request.getLastName());
         if (request.getPassword() != null) user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         if (request.getRoleId() != null) {
@@ -101,7 +90,7 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setUpdatedAt(LocalDateTime.now());
-        return mapToDTO(userRepository.save(user));
+        return UserDTO.fromEntity(userRepository.save(user));
     }
 
     @Override
@@ -113,5 +102,10 @@ public class UserServiceImpl implements UserService {
                     return true;
                 })
                 .orElse(false);
+    }
+
+    // Nếu muốn lưu token khi login
+    public void setTokens(Long userId, String accessToken, String refreshToken) {
+        // lưu access/refresh token vào DB nếu muốn
     }
 }

@@ -1,11 +1,14 @@
 package com.example.dailydo.controller;
 
 import com.example.dailydo.dto.UserDTO;
+import com.example.dailydo.request.CreateUserRequest;
+import com.example.dailydo.request.UpdateUserRequest;
 import com.example.dailydo.response.ApiResponse;
 import com.example.dailydo.service.interfaces.UserService;
+import com.example.dailydo.util.MessageUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import javax.validation.Valid;
 import java.util.List;
 
@@ -15,34 +18,44 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final MessageUtil messageUtil;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<UserDTO>> createUser(@RequestBody @Valid UserDTO.Request request) {
-        UserDTO userCreated = userService.createUser(request);
-        return ResponseEntity.ok(ApiResponse.success(userCreated,"User created successfully"));
-    }
-
+    // === GET ALL USERS ===
     @GetMapping
-    public ResponseEntity<ApiResponse<List<UserDTO>>> getAllActiveUsers() {
-        List<UserDTO> users = userService.getAllActiveUsers();
-        return ResponseEntity.ok(ApiResponse.success(users,"Users fetched successfully"));
+    public ApiResponse<List<UserDTO>> getAllUsers() {
+        List<UserDTO> users = userService.getAllUsers();
+        return ApiResponse.success(users, messageUtil.get("user.list.success", "Users retrieved successfully"));
     }
 
+    // === GET USER BY ID ===
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<UserDTO>> getUserById(@PathVariable long id) {
+    public ApiResponse<UserDTO> getUserById(@PathVariable Long id) {
         UserDTO user = userService.getUserById(id);
-        return ResponseEntity.ok(ApiResponse.success(user,"User fetched successfully"));
+        return ApiResponse.success(user, messageUtil.get("user.get.success", "User retrieved successfully"));
     }
 
+    // === CREATE NEW USER (ADMIN) ===
+    @PostMapping
+    public ApiResponse<UserDTO> createUser(@Valid @RequestBody CreateUserRequest request) {
+        UserDTO user = userService.createUser(request);
+        return ApiResponse.success(user, messageUtil.get("register.success"));
+    }
+
+    // === UPDATE USER ===
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<UserDTO>> updateUser(@PathVariable long id, @RequestBody @Valid UserDTO.Request request) {
-        UserDTO userUpdated = userService.updateUser(id, request);
-        return ResponseEntity.ok(ApiResponse.success(userUpdated,"User updated successfully"));
+    public ApiResponse<UserDTO> updateUser(@PathVariable Long id,
+                                           @Valid @RequestBody UpdateUserRequest request) {
+        UserDTO updatedUser = userService.updateUser(id, request);
+        return ApiResponse.success(updatedUser, messageUtil.get("user.update.success", "User updated successfully"));
     }
 
+    // === DELETE USER (SOFT DELETE) ===
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<UserDTO>> deleteUser(@PathVariable long id) {
-        userService.softDeleteUser(id);
-        return ResponseEntity.ok(ApiResponse.success(null,"User deleted successfully"));
+    public ApiResponse<Void> deleteUser(@PathVariable Long id) {
+        boolean deleted = userService.softDeleteUser(id);
+        String message = deleted
+                ? messageUtil.get("user.delete.success", "User deleted successfully")
+                : messageUtil.get("user.delete.failed", "User not found");
+        return ApiResponse.success(null, message);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.dailydo.response;
 
+import com.example.dailydo.enums.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +14,7 @@ public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
-    private String error;
+    private ErrorCode errorCode;
     private LocalDateTime timestamp;
 
     // === Success ===
@@ -26,23 +27,30 @@ public class ApiResponse<T> {
                 .build();
     }
 
+    public static <T> ApiResponse<T> success(String message) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message(message)
+                .build();
+    }
+
     // === Error (simple) ===
-    public static ApiResponse<?> error(String message, String errorType) {
+    public static ApiResponse<?> error(String message, ErrorCode code) {
         return ApiResponse.builder()
                 .success(false)
                 .message(message)
-                .error(errorType)
+                .errorCode(code)
                 .timestamp(LocalDateTime.now())
                 .build();
     }
 
     // === Error (with detailed data, e.g. validation errors) ===
-    public static <T> ApiResponse<T> error(String message, T errorData) {
+    public static <T> ApiResponse<T> error(String message, ErrorCode code, T data) {
         return ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
-                .data(errorData)
-                .timestamp(LocalDateTime.now())
+                .errorCode(code)
+                .data(data)
                 .build();
     }
 }

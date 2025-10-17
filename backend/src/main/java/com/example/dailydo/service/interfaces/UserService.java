@@ -2,13 +2,14 @@ package com.example.dailydo.service.interfaces;
 
 import com.example.dailydo.dto.UserDTO;
 import com.example.dailydo.model.User;
+import com.example.dailydo.request.CreateUserRequest;
+import com.example.dailydo.request.UpdateUserRequest;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface UserService {
 
-    UserDTO createUser(UserDTO.Request request);
+    UserDTO createUser(CreateUserRequest request);
 
     List<UserDTO> getAllUsers();
 
@@ -16,10 +17,9 @@ public interface UserService {
 
     UserDTO getUserById(Long id);
 
-    UserDTO updateUser(Long id, UserDTO.Request request);
+    UserDTO updateUser(Long id, UpdateUserRequest request);
 
     boolean softDeleteUser(Long id);
 
-    UserDTO mapToDTO(User user);
-
+    void setTokens(Long userId, String accessToken, String refreshToken);
 }

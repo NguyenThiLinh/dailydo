@@ -18,7 +18,7 @@ export default function LoginPage() {
 
     return (
         <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-lg">
-            <h1 className="text-2xl font-bold text-center mb-6">Login</h1>
+            <h1 className="text-2xl font-bold text-center mb-6 text-gray-700 ">Login</h1>
             {error && <Alert message={error} type="error" className="mb-4" />}
             <Form layout="vertical" onFinish={onFinish}>
                 <Form.Item label="Email" name="email" rules={[{ required: true }, { type: "email" }]}>
@@ -29,7 +29,7 @@ export default function LoginPage() {
                 </Form.Item>
                 <Button type="primary" htmlType="submit" loading={loading} className="w-full">Login</Button>
             </Form>
-            <p className="mt-4 text-center">
+            <p className="mt-4 text-center text-gray-600">
                 Chưa có tài khoản? <a href="/register" className="text-blue-500">Register</a>
             </p>
         </div>
